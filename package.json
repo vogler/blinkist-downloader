@@ -2,8 +2,8 @@
   "name": "blinkist-scraper",
   "version": "1.0.0",
   "description": "Scrape Blinkist and download saved books (text and audio)",
-  "main": "index.js",
-  "bin": "index.js",
+  "main": "index.ts",
+  "bin": "index.ts",
   "type": "module",
   "repository": {
     "type": "git",

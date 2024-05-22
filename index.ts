@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 
 import { cfg } from './config.js';
 import { context, page } from './playwright.js';
@@ -129,7 +129,7 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
     // write data at the end
     fs.mkdirSync(bookDir, { recursive: true });
     fs.writeFileSync(bookDir + 'details.json', JSON.stringify(details, null, 2));
-    await downloadFile(book.url, bookDir + 'cover.png');
+    await downloadFile(book.img, bookDir + 'cover.png');
     process.exit(0); // TODO remove
   }
 };
