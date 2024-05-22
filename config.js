@@ -28,4 +28,5 @@ export const cfg = {
     }
   },
   audio: process.env.AUDIO != '0', // set to 0 to disable downloading audio
+  checkall: process.env.CHECKALL == '1', // check all books in the library list instead of stopping at the first book already found in db.json
 };

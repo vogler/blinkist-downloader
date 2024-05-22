@@ -53,8 +53,12 @@ const updateLibrary = async (page, list = 'saved') => { // list = 'saved' | 'fin
       rating = parseFloat(rating);
       const item = { id, title, author, description, duration, rating, url, img };
       if (dbList.find(i => i.id === id)) {
-        console.log('Stopping at book already found in db.json:', item);
-        break pages;
+        if (!cfg.checkall) {
+          console.log('Stopping at book already found in db.json:', item);
+          break pages;
+        } else {
+          console.log('Book already in db.json:', item.id);
+        }
       } else {
         console.log('New book:', item);
         newBooks.push(item);

@@ -6,7 +6,10 @@ Usage:
 1. `npm install`
 2. `npx .`
 
-For now only goes through https://www.blinkist.com/en/app/library/saved
+What will it do?
+1. Go through https://www.blinkist.com/en/app/library/saved and https://www.blinkist.com/en/app/library/finished
+to check for newly added books to these lists and save them to `data/db.json`.
+2. Go through all books from `data/db.json` and download their text and audio to `data/books`
 
 
 ### Alternatives
