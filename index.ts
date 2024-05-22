@@ -137,8 +137,8 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
       await page.locator('[data-test-id="keyIdeas"]').click(); // open Key ideas chapter menu
       await page.locator('[data-test-id="chapterLink"]').first().click(); // go to first chapter (Introduction)
       while (chapter === await chapterNumber()) {
-        console.log('Waiting for 200ms...');
-        // await page.waitForTimeout(200);
+        // console.log('Waiting for 200ms...');
+        await page.waitForTimeout(200);
       }
     }
     await reset();
@@ -148,7 +148,8 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
       const title = await page.locator('h2').first().innerText();
       console.log(name, title);
       const text = await page.locator('.reader-content__text').first().innerText();
-      const chapter = { name, title, text };
+      const audio = await page.locator('[data-test-id="readerAudio"]').getAttribute('audio-url');
+      const chapter = { name, title, text, audio };
       chapters.push(chapter);
       const nextBtn = page.locator('[data-test-id="nextChapter"]');
       if (await nextBtn.isVisible()) {
@@ -165,6 +166,12 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
     fs.mkdirSync(bookDir, { recursive: true });
     fs.writeFileSync(bookDir + 'book.json', JSON.stringify({ ...details, orgChapter, chapters }, null, 2));
     await downloadFile(book.img, bookDir + 'cover.png');
+    if (cfg.audio) {
+      console.log('Downloading audio files...');
+      for (const { name, audio } of chapters) {
+        if (audio) await downloadFile(audio, bookDir + name + '.m4a');
+      }
+    }
     process.exit(0); // TODO remove
   }
 };
