@@ -124,11 +124,46 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
     // TODO number of ratings?
     const details = { ...book, categories, descriptionLong, authorDetails };
     console.log('Details:', details);
+
     await page.goto('https://www.blinkist.com/en/nc/reader/' + book.id);
+    await page.locator('.reader-content__text').waitFor(); // wait for content to load
+    // chapter number (Introduction, Key idea 1...), but last chapter (summary) has no name, so we time out and return Summary
+    const chapterNumber = () => page.locator('[data-test-id="currentChapterNumber"]').innerText({ timeout: 200 }).catch(() => 'Summary');
+    const orgChapter = await chapterNumber();
+    console.log('Original chapter:', orgChapter);
+    const reset = async () => {
+      const chapter = await chapterNumber();
+      if (chapter === 'Introduction') return;
+      await page.locator('[data-test-id="keyIdeas"]').click(); // open Key ideas chapter menu
+      await page.locator('[data-test-id="chapterLink"]').first().click(); // go to first chapter (Introduction)
+      while (chapter === await chapterNumber()) {
+        console.log('Waiting for 200ms...');
+        // await page.waitForTimeout(200);
+      }
+    }
+    await reset();
+    const chapters = [];
+    do {
+      const name = await chapterNumber();
+      const title = await page.locator('h2').first().innerText();
+      console.log(name, title);
+      const text = await page.locator('.reader-content__text').first().innerText();
+      const chapter = { name, title, text };
+      chapters.push(chapter);
+      const nextBtn = page.locator('[data-test-id="nextChapter"]');
+      if (await nextBtn.isVisible()) {
+        await nextBtn.click();
+        while (title === await page.locator('h2').first().innerText()) {
+          // console.log('Waiting for 200ms...');
+          await page.waitForTimeout(200);
+        }
+      } else break;
+    } while (true);
+    await reset();
 
     // write data at the end
     fs.mkdirSync(bookDir, { recursive: true });
-    fs.writeFileSync(bookDir + 'details.json', JSON.stringify(details, null, 2));
+    fs.writeFileSync(bookDir + 'book.json', JSON.stringify({ ...details, orgChapter, chapters }, null, 2));
     await downloadFile(book.img, bookDir + 'cover.png');
     process.exit(0); // TODO remove
   }
