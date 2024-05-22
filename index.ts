@@ -123,54 +123,59 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
     const categories = await detailDivs[1].locator('a').all().then(a => Promise.all(a.map(a => a.innerText())));
     const descriptionLong = await detailDivs[2].innerHTML();
     const authorDetails = await detailDivs[3].innerHTML();
-    const ratings = await page.locator('span:has-text(" ratings)")').innerText(); // e.g. 3.9 (89 ratings)
+    const ratings = await page.locator('span:has-text(" ratings)")').innerText({ timeout: 200 }).catch(() => undefined); // e.g. 3.9 (89 ratings); may not exist
     const durationDetail = await page.locator('span:has-text(" mins")').innerText(); // e.g. 15 mins
     const details = { ...book, ratings, durationDetail, categories, descriptionLong, authorDetails, contentState };
     console.log('Details:', details);
 
-    await page.goto('https://www.blinkist.com/en/nc/reader/' + book.id);
-    await page.locator('.reader-content__text').waitFor(); // wait for content to load
-    // chapter number (Introduction, Key idea 1...), but last chapter (summary) has no name, so we time out and return Summary
-    const chapterNumber = () => page.locator('[data-test-id="currentChapterNumber"]').innerText({ timeout: 200 }).catch(() => 'Summary');
-    const orgChapter = await chapterNumber();
-    console.log('Original chapter:', orgChapter);
-    const reset = async () => {
-      const chapter = await chapterNumber();
-      if (chapter === 'Introduction') return;
-      await page.locator('[data-test-id="keyIdeas"]').click(); // open Key ideas chapter menu
-      await page.locator('[data-test-id="chapterLink"]').first().click(); // go to first chapter (Introduction)
-      while (chapter === await chapterNumber()) {
-        // console.log('Waiting for 200ms...');
-        await page.waitForTimeout(200);
-      }
-    }
-    await reset();
     const chapters = [];
-    do {
-      const name = await chapterNumber();
-      const title = await page.locator('h2').first().innerText();
-      console.log(name, title);
-      const text = await page.locator('.reader-content__text').first().innerHTML();
-      const audio = await page.locator('[data-test-id="readerAudio"]').getAttribute('audio-url');
-      const chapter = { name, title, text, audio };
-      chapters.push(chapter);
-      const nextBtn = page.locator('[data-test-id="nextChapter"]');
-      if (await nextBtn.isVisible()) {
-        await nextBtn.click();
-        while (title === await page.locator('h2').first().innerText()) {
+    let orgChapter = undefined;
+    const resp = await page.goto('https://www.blinkist.com/en/nc/reader/' + book.id);
+    if (resp && resp.status() !== 404) {
+      await page.locator('.reader-content__text').waitFor(); // wait for content to load
+      // chapter number (Introduction, Key idea 1...), but last chapter (summary) has no name, so we time out and return Summary
+      const chapterNumber = () => page.locator('[data-test-id="currentChapterNumber"]').innerText({ timeout: 200 }).catch(() => 'Summary');
+      orgChapter = await chapterNumber();
+      console.log('Original chapter:', orgChapter);
+      const reset = async () => {
+        const chapter = await chapterNumber();
+        if (chapter === 'Introduction') return;
+        await page.locator('[data-test-id="keyIdeas"]').click(); // open Key ideas chapter menu
+        await page.locator('[data-test-id="chapterLink"]').first().click(); // go to first chapter (Introduction)
+        while (chapter === await chapterNumber()) {
           // console.log('Waiting for 200ms...');
           await page.waitForTimeout(200);
         }
-      } else break;
-    } while (true);
-    await reset();
+      }
+      await reset();
+      do {
+        const name = await chapterNumber();
+        const title = await page.locator('h2').first().innerText();
+        console.log(name, title);
+        const text = await page.locator('.reader-content__text').first().innerHTML();
+        const audio = await page.locator('[data-test-id="readerAudio"]').getAttribute('audio-url');
+        const chapter = { name, title, text, audio };
+        chapters.push(chapter);
+        const nextBtn = page.locator('[data-test-id="nextChapter"]');
+        if (await nextBtn.isVisible()) {
+          await nextBtn.click();
+          while (title === await page.locator('h2').first().innerText()) {
+            // console.log('Waiting for 200ms...');
+            await page.waitForTimeout(200);
+          }
+        } else break;
+      } while (true);
+      await reset();
+    } else {
+      console.error('Book not found:', book.id);
+    }
 
     // write data at the end
     fs.mkdirSync(bookDir, { recursive: true });
     fs.writeFileSync(bookDir + 'book.json', JSON.stringify({ ...details, downloadDate: new Date(), orgChapter, chapters }, null, 2));
     await downloadFile(book.img, bookDir + 'cover.png');
     if (cfg.audio) {
-      console.log('Downloading audio files...');
+      console.log('Downloading audio files:', chapters.filter(c => c.audio).length);
       for (const { name, audio } of chapters) {
         if (audio) await downloadFile(audio, bookDir + name + '.m4a');
       }
