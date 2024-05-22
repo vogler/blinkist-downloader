@@ -2,6 +2,8 @@
 
 import { cfg } from './config.js';
 import { context, page } from './playwright.js';
+import { existsSync } from 'node:fs';
+import chalk from 'chalk';
 
 // json database to save lists from https://www.blinkist.com/en/app/library
 import { JSONFilePreset } from 'lowdb/node';
@@ -76,8 +78,30 @@ const updateLibrary = async (page, list = 'saved') => { // list = 'saved' | 'fin
   } while (true);
   // add new books to db.json in reverse order
   dbList.push(...newBooks.toReversed());
+  await db.write(); // write out json db
   console.log('New books:', newBooks.length);
   console.log();
+};
+
+const downloadBooks = async (page, list = 'saved') => { // list = 'saved' | 'finished'
+  const dbList = db.data[list]; // sorted by date added ascending
+  const newBooks = [];
+  console.log('Check/download new books:', list);
+  console.log(list, 'books in db.json:', dbList.length);
+
+  for (const book of dbList) {
+    const exists = existsSync(`data/books/${book.id}`);
+    console.log('Book:', book.id, exists ? chalk.green('exists') : chalk.red('missing'));
+    if (exists) continue;
+    console.log('Downloading book:', book.url);
+    await page.goto(book.url);
+    const details = await page.locator('div:has(h4)').last().locator('div').all();
+    const categories = await Promise.all(details[1].locator('a').all().then(a => a.map(a => a.innerText())));
+    const description = await details[2].innerText();
+    const authorDetails = await details[3].innerText();
+    console.log('Details:', { categories, description, authorDetails });
+    process.exit(0); // TODO remove
+  }
 };
 
 try {
@@ -94,8 +118,14 @@ try {
     }
   }).catch(() => {});
 
-  await updateLibrary(page, 'saved');
-  await updateLibrary(page, 'finished');
+  if (cfg.update) {
+    await updateLibrary(page, 'saved');
+    await updateLibrary(page, 'finished');
+  }
+  if (cfg.download) {
+    await downloadBooks(page, 'saved');
+    await downloadBooks(page, 'finished');
+  }
 } catch (error) {
   console.error(error); // .toString()?
   process.exitCode ||= 1;

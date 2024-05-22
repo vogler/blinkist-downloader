@@ -27,6 +27,8 @@ export const cfg = {
       screenshots: process.env.SCREENSHOTS_DIR || dataDir('screenshots'), // set to 0 to disable screenshots
     }
   },
+  update: process.env.UPDATE != '0', // set to 0 to disable updating library
+  checkall: process.env.CHECKALL == '1', // set to 1 to check all books in the library list instead of stopping at the first book already found in db.json
+  download: process.env.DOWNLOAD != '0', // set to 0 to disable downloading books
   audio: process.env.AUDIO != '0', // set to 0 to disable downloading audio
-  checkall: process.env.CHECKALL == '1', // check all books in the library list instead of stopping at the first book already found in db.json
 };
