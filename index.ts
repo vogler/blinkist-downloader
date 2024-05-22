@@ -114,16 +114,18 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
     console.log('Book:', book.id, exists ? chalk.green('exists') : chalk.red('missing'));
     if (exists) continue;
     console.log('Downloading book:', book.url);
+    const gql = page.waitForResponse(r => r.request().method() == 'POST' && r.url() == 'https://gql-gateway.blinkist.com/graphql');
     await page.goto('https://www.blinkist.com/en/app/books/' + book.id);
+    const contentState = (await (await gql).json()).data.user.contentStateByContentTypeAndId;
     const detailsBox = page.locator('div:has(h4)').last();
     await detailsBox.waitFor();
     const detailDivs = await detailsBox.locator('div').all();
     const categories = await detailDivs[1].locator('a').all().then(a => Promise.all(a.map(a => a.innerText())));
-    const descriptionLong = await detailDivs[2].innerText();
-    const authorDetails = await detailDivs[3].innerText();
+    const descriptionLong = await detailDivs[2].innerHTML();
+    const authorDetails = await detailDivs[3].innerHTML();
     const ratings = await page.locator('span:has-text(" ratings)")').innerText(); // e.g. 3.9 (89 ratings)
     const durationDetail = await page.locator('span:has-text(" mins")').innerText(); // e.g. 15 mins
-    const details = { ...book, ratings, durationDetail, categories, descriptionLong, authorDetails };
+    const details = { ...book, ratings, durationDetail, categories, descriptionLong, authorDetails, contentState };
     console.log('Details:', details);
 
     await page.goto('https://www.blinkist.com/en/nc/reader/' + book.id);
@@ -148,7 +150,7 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
       const name = await chapterNumber();
       const title = await page.locator('h2').first().innerText();
       console.log(name, title);
-      const text = await page.locator('.reader-content__text').first().innerText();
+      const text = await page.locator('.reader-content__text').first().innerHTML();
       const audio = await page.locator('[data-test-id="readerAudio"]').getAttribute('audio-url');
       const chapter = { name, title, text, audio };
       chapters.push(chapter);
@@ -165,7 +167,7 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
 
     // write data at the end
     fs.mkdirSync(bookDir, { recursive: true });
-    fs.writeFileSync(bookDir + 'book.json', JSON.stringify({ ...details, orgChapter, chapters }, null, 2));
+    fs.writeFileSync(bookDir + 'book.json', JSON.stringify({ ...details, downloadDate: new Date(), orgChapter, chapters }, null, 2));
     await downloadFile(book.img, bookDir + 'cover.png');
     if (cfg.audio) {
       console.log('Downloading audio files...');
@@ -173,6 +175,7 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
         if (audio) await downloadFile(audio, bookDir + name + '.m4a');
       }
     }
+    console.log();
     // process.exit(0);
   }
 };
