@@ -16,7 +16,7 @@ export const cfg = {
   debug: process.env.PWDEBUG == '1', // runs non-headless and opens https://playwright.dev/docs/inspector
   record: process.env.RECORD == '1', // `recordHar` (network) + `recordVideo`
   dryrun: process.env.DRYRUN == '1', // don't save anything
-  show: process.env.SHOW == '1', // run non-headless
+  show: process.env.SHOW != '0', // run non-headless by default to avoid captcha, TODO make headless work
   get headless() { return !this.debug && !this.show },
   width: Number(process.env.WIDTH) || 1280, // width of the opened browser
   height: Number(process.env.HEIGHT) || 1280, // height of the opened browser

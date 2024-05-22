@@ -1,6 +1,7 @@
 import { cfg } from './config.js';
 
 // Try to avoid bot detection by Cloudflare.
+// Getting 'Verify you are human by completing the action below.' when running with SHOW=0
 // Could also use puppeteer-extra-plugin-stealth like for free-games-claimer.
 // Using https://github.com/apify/fingerprint-suite worked, but has no launchPersistentContext...
 // From https://github.com/apify/fingerprint-suite/issues/162:
@@ -11,6 +12,7 @@ const { fingerprint, headers } = new FingerprintGenerator().getFingerprint({
     // devices: ["mobile"],
     // operatingSystems: ["android"],
 });
+// console.log('Fingerprint:', fingerprint);
 
 import { chromium } from 'playwright-chromium';
 

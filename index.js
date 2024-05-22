@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// import { cfg } from './config.js';
+import { cfg } from './config.js';
 import { context, page } from './playwright.js';
 
 // json database to save lists from https://www.blinkist.com/en/app/library
@@ -33,9 +33,10 @@ const updateLibrary = async (page, list = 'saved') => { // list = 'saved' | 'fin
   console.log('Updating library:', url);
   console.log(list, 'books in db.json:', dbList.length);
 
+  const listItems = page.locator(`div:has-text("${list}") p`);
   const nextBtn = page.locator('button:has-text("Next"):not([disabled])');
-  do { // go through pages
-    const items = await page.locator('div:has-text("Saved") p').innerText();
+  pages: do { // go through pages
+    const items = await listItems.innerText();
     console.log('Current page:', items);
     const books = await page.locator('a[data-test-id="book-card"]').all();
     for (const book of books) {
@@ -53,22 +54,26 @@ const updateLibrary = async (page, list = 'saved') => { // list = 'saved' | 'fin
       const item = { id, title, author, description, duration, rating, url, img };
       if (dbList.find(i => i.id === id)) {
         console.log('Stopping at book already found in db.json:', item);
-        break;
+        break pages;
       } else {
         console.log('New book:', item);
         newBooks.push(item);
       }
     }
     // await page.pause();
-    await nextBtn.click(); // click next page button
-    // wait until items on page have been updated
-    while (items === await page.locator('div:has-text("Saved") p').innerText()) {
-      console.log('Waiting for 500ms...');
-      await page.waitForTimeout(500);
-    }
-  } while (await nextBtn.count()); // while next button is not disabled
+    if (await nextBtn.count()) { // while next button is not disabled; can't check this in do-while condition since it would already be false after click()
+      await nextBtn.click(); // click next page button
+      // wait until items on page have been updated
+      while (items === await listItems.innerText()) {
+        // console.log('Waiting for 500ms...');
+        await page.waitForTimeout(500);
+      }
+    } else break;
+  } while (true);
   // add new books to db.json in reverse order
   dbList.push(...newBooks.toReversed());
+  console.log('New books:', newBooks.length);
+  console.log();
 };
 
 try {
@@ -77,10 +82,16 @@ try {
   
   page.locator('h2:has-text("Verify you are human by completing the action below.")').waitFor().then(() => {;
     console.error('Verify you are human by completing the action below.');
-    return page.waitForTimeout(30*1000); // TODO wait until captcha is solved
+    if (cfg.headless) {
+      console.error('Can not solve captcha in headless mode. Exiting...');
+      process.exit(1);
+    } else {
+      return page.waitForTimeout(30*1000); // TODO wait until captcha is solved
+    }
   }).catch(() => {});
 
   await updateLibrary(page, 'saved');
+  await updateLibrary(page, 'finished');
 } catch (error) {
   console.error(error); // .toString()?
   process.exitCode ||= 1;
