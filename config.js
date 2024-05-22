@@ -27,4 +27,5 @@ export const cfg = {
       screenshots: process.env.SCREENSHOTS_DIR || dataDir('screenshots'), // set to 0 to disable screenshots
     }
   },
+  audio: process.env.AUDIO != '0', // set to 0 to disable downloading audio
 };
