@@ -2,21 +2,35 @@
 
 import { cfg } from './config.js';
 import { context, page } from './playwright.js';
-import { existsSync } from 'node:fs';
+import type { BrowserContext, Page } from 'playwright-chromium';
+import fs from 'node:fs';
 import chalk from 'chalk';
+
+type library = 'saved' | 'finished';
+type book = {
+  id: string,
+  title: string,
+  author: string,
+  description: string,
+  duration: number,
+  rating: number,
+  url: string,
+  img: string,
+};
 
 // json database to save lists from https://www.blinkist.com/en/app/library
 import { JSONFilePreset } from 'lowdb/node';
-const db = await JSONFilePreset('data/db.json', { guides: [], saved: [], finished: [] });
+const defaultData : { guides: book[], saved: book[], finished: book[] } = { guides: [], saved: [], finished: [] };
+const db = await JSONFilePreset('data/db.json', defaultData);
 
-const cookieConsent = async context => {
+const cookieConsent = async (context: BrowserContext) => {
   return context.addCookies([
     { name: 'CookieConsent', value: JSON.stringify({stamp:'V2Zm11G30yff5ZZ8WLu8h+BPe03juzWMZGOyPF4bExMdyYwlFj+3Hw==',necessary:true,preferences:true,statistics:true,marketing:true,method:'explicit',ver:1,utc:1716329838000,region:'de'}), domain: 'www.blinkist.com', path: '/' }, // Accept cookies since consent banner overlays and blocks screen
   ]);
   // page.locator('button:has-text("Allow all cookies")').click().catch(() => {}); // solved by setting cookie above
 };
 
-const login = async page => {
+const login = async (page: Page) => {
   await page.goto('https://www.blinkist.com/en/app/library/saved');
   // redirects if not logged in to https://www.blinkist.com/en/nc/login?last_page_before_login=/en/app/library/saved
   return Promise.any([page.waitForURL(/.*login.*/).then(() => {
@@ -25,7 +39,7 @@ const login = async page => {
   }), page.locator('h3:has-text("Saved")').waitFor()]);
 }
 
-const updateLibrary = async (page, list = 'saved') => { // list = 'saved' | 'finished'
+const updateLibrary = async (page: Page, list: library = 'saved') => {
   const dbList = db.data[list]; // sorted by date added ascending
   // sorted by date added descending
   const url = 'https://www.blinkist.com/en/app/library/' + list;
@@ -43,17 +57,20 @@ const updateLibrary = async (page, list = 'saved') => { // list = 'saved' | 'fin
     const books = await page.locator('a[data-test-id="book-card"]').all();
     for (const book of books) {
       const slug = await book.getAttribute('href');
-      const id = slug.split('/').pop();
+      if (!slug) throw new Error('Book has no href attribute!');
+      const id = slug.split('/').pop() ?? slug;
       const url = 'https://www.blinkist.com' + slug;
       const title = await book.getAttribute('aria-label');
+      if (!title) throw new Error('Book has no title / aria-label attribute!');
       const img = await book.locator('img').getAttribute('src');
+      if (!img) throw new Error('Book has no img src attribute!');
       const author = await book.locator('[data-test-id="subtitle"]').innerText();
       const description = await book.locator('[data-test-id="description"]').innerText();
       // const details = await book.locator('div:below([data-test-id="description"])').innerText();
-      let [duration, rating] = (await book.locator('div.text-mid-grey.text-caption.mt-2').last().innerText()).split('\n');
-      duration = parseFloat(duration.replace(' min', ''));
-      rating = parseFloat(rating);
-      const item = { id, title, author, description, duration, rating, url, img };
+      let meta = (await book.locator('div.text-mid-grey.text-caption.mt-2').last().innerText()).split('\n');
+      const duration = parseFloat(meta[0].replace(' min', ''));
+      const rating = parseFloat(meta[1]);
+      const item: book = { id, title, author, description, duration, rating, url, img };
       if (dbList.find(i => i.id === id)) {
         if (!cfg.checkall) {
           console.log('Stopping at book already found in db.json:', item);
@@ -83,23 +100,36 @@ const updateLibrary = async (page, list = 'saved') => { // list = 'saved' | 'fin
   console.log();
 };
 
-const downloadBooks = async (page, list = 'saved') => { // list = 'saved' | 'finished'
+const downloadFile = (url: string, path: string) => fetch(url).then(res => res.arrayBuffer()).then(bytes => fs.writeFileSync(path, Buffer.from(bytes)));
+
+const downloadBooks = async (page: Page, list: library = 'saved') => {
   const dbList = db.data[list]; // sorted by date added ascending
   const newBooks = [];
   console.log('Check/download new books:', list);
   console.log(list, 'books in db.json:', dbList.length);
 
   for (const book of dbList) {
-    const exists = existsSync(`data/books/${book.id}`);
+    const bookDir = `data/books/${list}/${book.id}/`;
+    const exists = fs.existsSync(bookDir);
     console.log('Book:', book.id, exists ? chalk.green('exists') : chalk.red('missing'));
     if (exists) continue;
     console.log('Downloading book:', book.url);
-    await page.goto(book.url);
-    const details = await page.locator('div:has(h4)').last().locator('div').all();
-    const categories = await Promise.all(details[1].locator('a').all().then(a => a.map(a => a.innerText())));
-    const description = await details[2].innerText();
-    const authorDetails = await details[3].innerText();
-    console.log('Details:', { categories, description, authorDetails });
+    await page.goto('https://www.blinkist.com/en/app/books/' + book.id);
+    const detailsBox = page.locator('div:has(h4)').last();
+    await detailsBox.waitFor();
+    const detailDivs = await detailsBox.locator('div').all();
+    const categories = await detailDivs[1].locator('a').all().then(a => Promise.all(a.map(a => a.innerText())));
+    const descriptionLong = await detailDivs[2].innerText();
+    const authorDetails = await detailDivs[3].innerText();
+    // TODO number of ratings?
+    const details = { ...book, categories, descriptionLong, authorDetails };
+    console.log('Details:', details);
+    await page.goto('https://www.blinkist.com/en/nc/reader/' + book.id);
+
+    // write data at the end
+    fs.mkdirSync(bookDir, { recursive: true });
+    fs.writeFileSync(bookDir + 'details.json', JSON.stringify(details, null, 2));
+    await downloadFile(book.url, bookDir + 'cover.png');
     process.exit(0); // TODO remove
   }
 };

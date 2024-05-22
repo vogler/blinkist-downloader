@@ -17,5 +17,9 @@
     "fingerprint-injector": "^2.1.51",
     "lowdb": "^7.0.1",
     "playwright-chromium": "^1.44.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node21": "^21.0.3",
+    "@types/node": "^20.12.12"
   }
 }
