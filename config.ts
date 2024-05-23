@@ -20,7 +20,7 @@ export const cfg = {
   get headless() { return !this.debug && !this.show },
   width: Number(process.env.WIDTH) || 1280, // width of the opened browser
   height: Number(process.env.HEIGHT) || 1280, // height of the opened browser
-  timeout: (Number(process.env.TIMEOUT) || 60) * 1000, // default timeout for playwright is 30s
+  timeout: (Number(process.env.TIMEOUT) || 30) * 1000, // default timeout for playwright is 30s
   get dir() { // avoids ReferenceError: Cannot access 'dataDir' before initialization
     return {
       browser: process.env.BROWSER_DIR || dataDir('browser'), // for multiple accounts or testing

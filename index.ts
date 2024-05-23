@@ -104,21 +104,31 @@ const downloadFile = (url: string, path: string) => fetch(url).then(res => res.a
 
 const downloadBooks = async (page: Page, list: library = 'saved') => {
   const dbList = db.data[list]; // sorted by date added ascending
-  const newBooks = [];
   console.log('Check/download new books:', list);
   console.log(list, 'books in db.json:', dbList.length);
 
+  let i = 0;
   for (const book of dbList) {
+    i++;
     const bookDir = `data/books/${list}/${book.id}/`;
     const exists = fs.existsSync(bookDir);
-    console.log('Book:', book.id, exists ? chalk.green('exists') : chalk.red('missing'));
+    console.log(`Book ${i}:`, book.id, exists ? chalk.green('exists') : chalk.red('missing'));
     if (exists) continue;
-    console.log('Downloading book:', book.url);
+    console.log(`Downloading book (${dbList.length - i} left):`, book.url);
     const gql = page.waitForResponse(r => r.request().method() == 'POST' && r.url() == 'https://gql-gateway.blinkist.com/graphql');
     await page.goto('https://www.blinkist.com/en/app/books/' + book.id);
     const contentState = (await (await gql).json()).data.user.contentStateByContentTypeAndId;
     const detailsBox = page.locator('div:has(h4)').last();
-    await detailsBox.waitFor();
+    try {
+      await detailsBox.waitFor({ timeout: 10000 });
+    } catch (error) {
+      // e.g. https://www.blinkist.com/en/app/books/bulletproof-diet-en
+      // redirected in JS to https://www.blinkist.com/en/app/for-you?missing-title=bulletproof-diet-en
+      console.error(chalk.red('Missing book:'), book.id);
+      console.error('Error:', error);
+      console.log();
+      continue;
+    }
     const detailDivs = await detailsBox.locator('div').all();
     const categories = await detailDivs[1].locator('a').all().then(a => Promise.all(a.map(a => a.innerText())));
     const descriptionLong = await detailDivs[2].innerHTML();
@@ -201,7 +211,7 @@ try {
 
   if (cfg.update) {
     await updateLibrary(page, 'saved');
-    await updateLibrary(page, 'finished');
+    // await updateLibrary(page, 'finished');
   }
   if (cfg.download) {
     await downloadBooks(page, 'saved');
