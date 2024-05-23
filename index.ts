@@ -116,22 +116,31 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
   for (const book of dbList) {
     i++;
     const bookDir = `data/books/${list}/${book.id}/`;
-    const exists = fs.existsSync(bookDir);
-    console.log(`Book ${i}:`, book.id, exists ? chalk.green('exists') : chalk.red('missing'));
-    if (exists) continue;
+    const bookJson = bookDir + 'book.json';
+    const existsDir = fs.existsSync(bookDir);
+    const existsJson = existsDir && fs.existsSync(bookJson);
+    const existsAudio = existsDir && fs.existsSync(bookDir + 'Summary.m4a');
+    console.log(`Book ${i}:`, book.id,
+                existsDir ?
+                  (existsJson ?
+                    (existsAudio ? chalk.green('exists') : chalk.yellow('audio missing'))
+                  : chalk.red('missing'))
+                : chalk.yellow('download'));
+    if (existsDir) continue;
     console.log(`Downloading book (${dbList.length - i} left):`, book.url);
     const gql = page.waitForResponse(r => r.request().method() == 'POST' && r.url() == 'https://gql-gateway.blinkist.com/graphql');
     await page.goto('https://www.blinkist.com/en/app/books/' + book.id);
     const contentState = (await (await gql).json()).data.user.contentStateByContentTypeAndId;
     const detailsBox = page.locator('div:has(h4)').last();
     try {
-      await detailsBox.waitFor({ timeout: 10000 });
+      await detailsBox.waitFor({ timeout: 15000 });
     } catch (error) {
       // e.g. https://www.blinkist.com/en/app/books/bulletproof-diet-en
       // redirected in JS to https://www.blinkist.com/en/app/for-you?missing-title=bulletproof-diet-en
       console.error(chalk.red('Missing book:'), book.id);
       console.error('Error:', error);
       console.log();
+      fs.mkdirSync(bookDir, { recursive: true });
       continue;
     }
     const detailDivs = await detailsBox.locator('div').all();
@@ -187,7 +196,7 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
 
     // write data at the end
     fs.mkdirSync(bookDir, { recursive: true });
-    fs.writeFileSync(bookDir + 'book.json', JSON.stringify({ ...details, downloadDate: new Date(), orgChapter, chapters }, null, 2));
+    fs.writeFileSync(bookJson, JSON.stringify({ ...details, downloadDate: new Date(), orgChapter, chapters }, null, 2));
     await downloadFile(book.img, bookDir + 'cover.png');
     if (cfg.audio) {
       console.log('Downloading audio files:', chapters.filter(c => c.audio).length);
@@ -198,6 +207,7 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
     console.log();
     // process.exit(0);
   }
+  console.log();
 };
 
 try {
