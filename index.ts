@@ -78,6 +78,11 @@ const updateLibrary = async (page: Page, list: library = 'saved') => {
         } else {
           console.log('Book already in db.json:', item.id);
         }
+      } else if (list === 'finished' && db.data.saved.find(i => i.id === id)) {
+        // after downloading a book (even with reset to start), it will also appear in finished list
+        // since we don't want to download it in finished as well, we skip it here
+        // TODO to mark a book as finished, move it from saved to finished in data/db.json and data/books
+        console.log('Skipping book already in saved list:', item.id);
       } else {
         console.log('New book:', item);
         newBooks.push(item);
@@ -211,7 +216,7 @@ try {
 
   if (cfg.update) {
     await updateLibrary(page, 'saved');
-    // await updateLibrary(page, 'finished');
+    await updateLibrary(page, 'finished');
   }
   if (cfg.download) {
     await downloadBooks(page, 'saved');
