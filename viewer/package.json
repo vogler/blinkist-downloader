@@ -1,7 +1,14 @@
 {
-  "name": "my-vue-app",
+  "name": "blinkist-downloader-viewer",
   "private": true,
   "version": "0.0.0",
+  "description": "Scrape Blinkist and download saved books (text and audio)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vogler/blinkist-downloader.git"
+  },
+  "author": "Ralf Vogler",
+  "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
     "dev": "vite",
