@@ -2,21 +2,25 @@
   "name": "blinkist-scraper",
   "version": "1.0.0",
   "description": "Scrape Blinkist and download saved books (text and audio)",
-  "main": "index.ts",
-  "bin": "index.ts",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/vogler/blinkist-scraper.git"
   },
   "author": "Ralf Vogler",
   "license": "AGPL-3.0-only",
+  "main": "index.ts",
+  "bin": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "tsx ./index.ts"
+  },
   "dependencies": {
     "chalk": "^5.3.0",
     "dotenv": "^16.4.5",
     "fingerprint-injector": "^2.1.51",
     "lowdb": "^7.0.1",
-    "playwright-chromium": "^1.44.0"
+    "playwright-chromium": "^1.44.0",
+    "tsx": "^4.11.0"
   },
   "devDependencies": {
     "@tsconfig/node21": "^21.0.3",
