@@ -3,7 +3,6 @@ import { createSignal } from 'solid-js'
 // import { ExternalLink } from 'lucide-solid' // this made `npm run dev` load all icons and just show a blank page since fingerprint.jsx was blocked by uBlock; see https://github.com/lucide-icons/lucide/issues/1675#issuecomment-2147119821
 // import ExternalLink from './icons/ExternalLink.svg' // works, but then need to copy each svg and use <img src={ExternalLink} /> instead of just <ExternalLink /> which also missed proper styling (black instead of blue) when e.g. used in <a>
 import ExternalLink from 'lucide-solid/icons/external-link'
-import './App.css'
 
 // https://medium.com/@akshaykrdas001/how-to-fetch-data-from-local-json-file-and-render-it-to-html-document-with-using-vanilla-javascript-a0191a894f25
 // can load local images via <img> without webserver, but no local .js or .json files via <script>, import or fetch() -> bundler could inline db.json during build, but would still need to load */book.json dynamically or put everything in db.json
@@ -13,34 +12,57 @@ import './App.css'
 // however, we need to serve */book.json anyway, so we also just fetch the overview json
 const db = await (await fetch('/db.json')).json()
 
-const [size, setSize] = createSignal(250) // book cover width
+const example = {
+  "id": "das-ende-der-armut-de",
+  "title": "Das Ende der Armut",
+  "author": "Jeffrey D. Sachs",
+  "description": "Ein ökonomisches Programm für eine gerechtere Welt",
+  "duration": 21,
+  "rating": 4.4,
+  "url": "https://www.blinkist.com/en/app/books/das-ende-der-armut-de",
+  "img": "https://images.blinkist.io/images/books/50d72a26e4b045383aa45e20/1_1/640.png"
+}
 
 const Book = (book: any) => {
   return (
-    <div class="card">
-      <a href={book.id}>
-        <img src={book.img} alt={book.title} width={size()} /> <br />
-        {book.title}
-      </a> &nbsp;
-      <a href={book.url} target="_blank" rel="noreferrer">
-        {/* blinkist */}
-        <ExternalLink />
+    <div>
+      <a href={book.id} class="flex justify-center">
+        <img src={book.img} alt={book.title} class="shadow hover:shadow-xl" /> {/* border-solid border-blue-500 hover:border-2 */}
       </a>
+      <div class="text-xs text-slate-400 flex justify-between leading-6 font-medium tabular-nums">
+        <div> {book.duration} min </div>
+        <div> {book.rating} ⭐︎ </div>
+      </div>
+      <div> {book.title} </div>
+      <div class="text-xs text-slate-400"> {book.author} </div>
+      {/* <a href={book.url} target="_blank" rel="noreferrer"> */}
+      {/*   <ExternalLink /> */}
+      {/* </a> */}
     </div>
   )
 }
 
+const gridCols = ['grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4', 'grid-cols-5', 'grid-cols-6', 'grid-cols-7', 'grid-cols-8', 'grid-cols-9', 'grid-cols-10'] // tailwind compiler needs to be able to extract classnames, so we can't just dynamically concatenate as string...
+
 function App() {
+  const [cols, setCols] = createSignal(5) // grid-cols-n
+
   return (
     <>
-      <a href="https://github.com/vogler/blinkist-downloader"><h1>blinkist-downloader</h1></a>
-      <p class="read-the-docs">
+      <a href="https://github.com/vogler/blinkist-downloader">
+        <h1>blinkist-downloader</h1>
+      </a>
+      <p class="text-slate-600">
         Saved: {db.saved.length} |
         Finished: {db.finished.length}
       </p>
-      <button onClick={() => setSize((size) => size - 20)}> - </button>
-      <button onClick={() => setSize((size) => size + 20)}> + </button>
-      {db.saved.slice(-10).map(Book)}
+      Columns:
+      <button disabled={cols()<=1} onClick={() => setCols(x => x - 1)}> - </button>
+      {cols()}
+      <button disabled={cols()>=gridCols.length} onClick={() => setCols(x => x + 1)}> + </button>
+      <div class={`m-8 grid grid-flow-row ${gridCols[(cols()-1) % gridCols.length]} gap-8`}>
+        {db.saved.slice(-10).map(Book)}
+      </div>
     </>
   )
 }
