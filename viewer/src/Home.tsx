@@ -26,7 +26,7 @@ const example = {
 const Book = (book: any) => {
   return (
     <div>
-      <a href={book.id} class="flex justify-center">
+      <a href={`/book/${book.id}`} class="flex justify-center">
         <img src={book.img} alt={book.title} class="shadow hover:shadow-xl" /> {/* border-solid border-blue-500 hover:border-2 */}
       </a>
       <div class="text-xs text-slate-400 flex justify-between leading-6 font-medium tabular-nums">
@@ -49,9 +49,6 @@ function App() {
 
   return (
     <>
-      <a href="https://github.com/vogler/blinkist-downloader">
-        <h1>blinkist-downloader</h1>
-      </a>
       <p class="text-slate-600">
         Saved: {db.saved.length} |
         Finished: {db.finished.length}
