@@ -1,7 +1,8 @@
 import { createSignal } from 'solid-js'
 // https://lucide.dev/icons
 // import { ExternalLink } from 'lucide-solid' // this made `npm run dev` load all icons and just show a blank page since fingerprint.jsx was blocked by uBlock; see https://github.com/lucide-icons/lucide/issues/1675#issuecomment-2147119821
-import ExternalLink from './icons/ExternalLink.svg'
+// import ExternalLink from './icons/ExternalLink.svg' // works, but then need to copy each svg and use <img src={ExternalLink} /> instead of just <ExternalLink /> which also missed proper styling (black instead of blue) when e.g. used in <a>
+import ExternalLink from 'lucide-solid/icons/external-link'
 import './App.css'
 
 // https://medium.com/@akshaykrdas001/how-to-fetch-data-from-local-json-file-and-render-it-to-html-document-with-using-vanilla-javascript-a0191a894f25
@@ -23,8 +24,7 @@ const Book = (book: any) => {
       </a> &nbsp;
       <a href={book.url} target="_blank" rel="noreferrer">
         {/* blinkist */}
-        {/* <ExternalLink /> */}
-        <img src={ExternalLink} alt="blinkist" />
+        <ExternalLink />
       </a>
     </div>
   )
