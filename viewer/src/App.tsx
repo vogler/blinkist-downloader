@@ -1,4 +1,7 @@
 import { createSignal } from 'solid-js'
+// https://lucide.dev/icons
+// import { ExternalLink } from 'lucide-solid' // this made `npm run dev` load all icons and just show a blank page since fingerprint.jsx was blocked by uBlock; see https://github.com/lucide-icons/lucide/issues/1675#issuecomment-2147119821
+import ExternalLink from './icons/ExternalLink.svg'
 import './App.css'
 
 // https://medium.com/@akshaykrdas001/how-to-fetch-data-from-local-json-file-and-render-it-to-html-document-with-using-vanilla-javascript-a0191a894f25
@@ -17,9 +20,11 @@ const Book = (book: any) => {
       <a href={book.id}>
         <img src={book.img} alt={book.title} width={size()} /> <br />
         {book.title}
-      </a> <br />
+      </a> &nbsp;
       <a href={book.url} target="_blank" rel="noreferrer">
-        blinkist
+        {/* blinkist */}
+        {/* <ExternalLink /> */}
+        <img src={ExternalLink} alt="blinkist" />
       </a>
     </div>
   )
@@ -35,7 +40,7 @@ function App() {
       </p>
       <button onClick={() => setSize((size) => size - 20)}> - </button>
       <button onClick={() => setSize((size) => size + 20)}> + </button>
-      { db.saved.slice(-10).map(Book) }
+      {db.saved.slice(-10).map(Book)}
     </>
   )
 }
