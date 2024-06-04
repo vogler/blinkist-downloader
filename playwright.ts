@@ -16,7 +16,7 @@ const { fingerprint, headers } = new FingerprintGenerator().getFingerprint({
 
 import { chromium } from 'playwright-chromium';
 
-export const context = await chromium.launchPersistentContext(cfg.dir.browser, {
+export const context = await chromium.launchPersistentContext(cfg.browserDir, {
     headless: cfg.headless,
     userAgent: fingerprint.navigator.userAgent,
     viewport: {

@@ -10,8 +10,8 @@ Usage:
 
 What will it do?
 1. Go through https://www.blinkist.com/en/app/library/saved and https://www.blinkist.com/en/app/library/finished
-to check for newly added books to these lists and save them to `data/db.json`.
-1. Go through all books from `data/db.json` and download their text (`book.json`) and audio (each chapter as `.m4a`) to `data/books`.
+to check for newly added books to these lists and save them to `books/db.json`.
+1. Go through all books from `books/db.json` and download their text (`book.json`) and audio (each chapter as `.m4a`) to `books/{saved,finished}`.
 
 A book summary including audio is around 20MB depending on its length.
 
@@ -19,7 +19,7 @@ Caveat: Downloading a book will also put it in blinkist's finished list (despite
 
 Example:
 ```console
-$ ls data/books/saved/how-to-avoid-a-climate-disaster-en
+$ ls books/saved/how-to-avoid-a-climate-disaster-en
  Introduction.m4a  'Key idea 2.m4a'  'Key idea 4.m4a'  'Key idea 6.m4a'  'Key idea 8.m4a'   book.json
 'Key idea 1.m4a'   'Key idea 3.m4a'  'Key idea 5.m4a'  'Key idea 7.m4a'   Summary.m4a       cover.png
 ```

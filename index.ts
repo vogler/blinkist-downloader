@@ -21,7 +21,7 @@ type book = {
 // json database to save lists from https://www.blinkist.com/en/app/library
 import { JSONFilePreset } from 'lowdb/node';
 const defaultData : { guides: book[], saved: book[], finished: book[] } = { guides: [], saved: [], finished: [] };
-const db = await JSONFilePreset('data/db.json', defaultData);
+const db = await JSONFilePreset('books/db.json', defaultData);
 
 const cookieConsent = async (context: BrowserContext) => {
   return context.addCookies([
@@ -81,7 +81,7 @@ const updateLibrary = async (page: Page, list: library = 'saved') => {
       } else if (list === 'finished' && db.data.saved.find(i => i.id === id)) {
         // after downloading a book (even with reset to start), it will also appear in finished list
         // since we don't want to download it in finished as well, we skip it here
-        // TODO to mark a book as finished, move it from saved to finished in data/db.json and data/books
+        // TODO to mark a book as finished, move it from saved to finished in books/db.json and books/
         console.log('Skipping book already in saved list:', item.id);
       } else {
         console.log('New book:', item);
@@ -115,7 +115,7 @@ const downloadBooks = async (page: Page, list: library = 'saved') => {
   let i = 0;
   for (const book of dbList) {
     i++;
-    const bookDir = `data/books/${list}/${book.id}/`;
+    const bookDir = `books/${list}/${book.id}/`;
     const bookJson = bookDir + 'book.json';
     const existsDir = fs.existsSync(bookDir);
     const existsJson = existsDir && fs.existsSync(bookJson);

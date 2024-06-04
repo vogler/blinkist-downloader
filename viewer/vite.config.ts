@@ -4,7 +4,7 @@ import solid from 'vite-plugin-solid'
 
 export default defineConfig({
   plugins: [solid()],
-  publicDir: '../data',
+  publicDir: '../books',
   resolve: {
     alias: {
       "lucide-solid/icons": fileURLToPath(
