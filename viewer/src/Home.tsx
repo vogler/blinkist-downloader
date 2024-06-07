@@ -12,7 +12,18 @@ import ExternalLink from 'lucide-solid/icons/external-link'
 // however, we need to serve */book.json anyway, so we also just fetch the overview json
 const db = await (await fetch('/db.json')).json()
 
-const example = {
+export type book = {
+  id: string,
+  title: string,
+  author: string,
+  description: string,
+  duration: number,
+  rating: number,
+  url: string,
+  img: string,
+}
+
+const _example : book = {
   "id": "das-ende-der-armut-de",
   "title": "Das Ende der Armut",
   "author": "Jeffrey D. Sachs",
@@ -23,7 +34,7 @@ const example = {
   "img": "https://images.blinkist.io/images/books/50d72a26e4b045383aa45e20/1_1/640.png"
 }
 
-const Book = (book: any) => {
+const Book = (book: book) => {
   return (
     <div>
       <a href={`/book/${book.id}`} class="flex justify-center">
