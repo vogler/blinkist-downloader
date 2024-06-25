@@ -18,6 +18,7 @@ type book = {
   img: string,
 };
 
+fs.mkdirSync('books', { recursive: true });
 // json database to save lists from https://www.blinkist.com/en/app/library
 import { JSONFilePreset } from 'lowdb/node';
 const defaultData : { guides: book[], saved: book[], finished: book[] } = { guides: [], saved: [], finished: [] };
