@@ -55,9 +55,10 @@ const updateLibrary = async (page: Page, list: library = 'saved') => {
   pages: do { // go through pages
     const items = await listItems.innerText();
     console.log('Current page:', items);
-    const books = await page.locator('a[data-test-id="book-card"]').all();
+    const books = await page.locator('a[data-test-id="book-card"]:not(.pointer-events-none)').all();
     for (const book of books) {
       const slug = await book.getAttribute('href');
+      if (slug && slug.indexOf('/app/episodes')) continue;
       if (!slug) throw new Error('Book has no href attribute!');
       const id = slug.split('/').pop() ?? slug;
       const url = 'https://www.blinkist.com' + slug;
